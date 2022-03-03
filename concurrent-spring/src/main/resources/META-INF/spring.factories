@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+com.caojiantao.concurrent.spring.listener.NodeMapInit
