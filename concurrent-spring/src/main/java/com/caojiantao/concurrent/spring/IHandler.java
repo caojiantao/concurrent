@@ -1,10 +1,11 @@
 package com.caojiantao.concurrent.spring;
 
-public interface IHandler<Context> {
+public interface IHandler<T> {
 
-    void doHandler(Context context) throws Exception;
+    void doHandler(SpringStarter starter, T context) throws Exception;
 
-    void onError(Exception e);
+    void onError(SpringStarter starter, Exception e);
 
-    default void fallback(Context context) {}
+    default void fallback(T context) {
+    }
 }

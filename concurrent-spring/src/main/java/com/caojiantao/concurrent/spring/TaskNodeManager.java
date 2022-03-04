@@ -64,7 +64,7 @@ public class TaskNodeManager {
         if (hasInit) {
             return;
         }
-        log.info("新增任务节点 {}", node);
+        log.info("新增任务节点[{}]", node.getTaskName());
         taskNodeMap.add(nodeInterface, node);
         List<TaskNode> nextList = nextMap.get(node.getHandler().getClass());
         if (!CollectionUtils.isEmpty(nextList)) {
