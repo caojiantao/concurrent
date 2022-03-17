@@ -9,14 +9,16 @@ import java.util.List;
 @Data
 public class TaskNode<P, Q extends IHandler<P>> {
 
+    private Integer taskId;
     private String taskName;
 
-    private int preTasks;
+    private Integer preTask = 0;
     private Q handler;
 
-    private List<TaskNode> nextNodeList;
+    private List<TaskNode<P, Q>> nextNodeList;
 
-    public TaskNode(String taskName, Q handler) {
+    public TaskNode(Integer taskId, String taskName, Q handler) {
+        this.taskId = taskId;
         this.taskName = taskName;
         this.handler = handler;
         this.nextNodeList = new ArrayList<>();

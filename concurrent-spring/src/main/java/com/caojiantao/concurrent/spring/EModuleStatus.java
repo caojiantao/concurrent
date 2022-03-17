@@ -1,8 +1,9 @@
 package com.caojiantao.concurrent.spring;
 
-public enum EStatus {
+public enum EModuleStatus {
     RUNNING,
     INTERRUPT,
     ERROR,
+    COMPLETE
     ;
 }

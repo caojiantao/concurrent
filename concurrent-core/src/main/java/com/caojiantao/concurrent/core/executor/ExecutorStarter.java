@@ -14,9 +14,9 @@ public class ExecutorStarter {
     private LinkedList<Task> taskList = new LinkedList<>();
     private CountDownLatch latch;
 
-    public static ExecutorStarter build(String name, ExecutorService executor) {
+    public static ExecutorStarter build(ExecutorModule executorModule) {
         ExecutorStarter starter = new ExecutorStarter();
-        starter.executorModule = new ExecutorModule(name, executor);
+        starter.executorModule = executorModule;
         return starter;
     }
 
@@ -26,7 +26,7 @@ public class ExecutorStarter {
         return this;
     }
 
-    public void sync(long mills) throws InterruptedException {
+    public boolean sync(long mills) throws InterruptedException {
         latch = new CountDownLatch(taskList.size());
         ExecutorService executor = executorModule.getExecutor();
         for (Task task : taskList) {
@@ -40,7 +40,6 @@ public class ExecutorStarter {
                 }
             });
         }
-        boolean complete = latch.await(mills, TimeUnit.MILLISECONDS);
-        System.out.println(complete);
+        return latch.await(mills, TimeUnit.MILLISECONDS);
     }
 }
