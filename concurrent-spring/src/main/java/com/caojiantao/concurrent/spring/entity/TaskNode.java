@@ -1,7 +1,7 @@
 package com.caojiantao.concurrent.spring.entity;
 
 import com.caojiantao.concurrent.spring.constant.ETaskState;
-import com.caojiantao.concurrent.spring.widget.IHandler;
+import com.caojiantao.concurrent.spring.widget.ITaskHandler;
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -15,11 +15,11 @@ public class TaskNode<T> {
     private ETaskState taskState;
 
     private Integer addr;
-    private IHandler<T> handler;
+    private ITaskHandler<T> handler;
 
     private List<TaskNode<T>> nextList;
 
-    public TaskNode(Integer taskId, String taskName, IHandler<T> handler) {
+    public TaskNode(Integer taskId, String taskName, ITaskHandler<T> handler) {
         this.taskId = taskId;
         this.taskName = taskName;
         this.taskState = ETaskState.RUNNING;

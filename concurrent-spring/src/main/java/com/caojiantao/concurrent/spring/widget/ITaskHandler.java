@@ -1,8 +1,6 @@
 package com.caojiantao.concurrent.spring.widget;
 
-import com.caojiantao.concurrent.spring.SpringStarter;
-
-public interface IHandler<T> {
+public interface ITaskHandler<T> {
 
     void doHandler(IExecutorController controller, T context) throws Exception;
 

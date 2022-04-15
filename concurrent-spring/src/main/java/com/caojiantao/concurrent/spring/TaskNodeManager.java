@@ -2,7 +2,7 @@ package com.caojiantao.concurrent.spring;
 
 import com.caojiantao.concurrent.spring.annotation.ExecutorTask;
 import com.caojiantao.concurrent.spring.entity.TaskNode;
-import com.caojiantao.concurrent.spring.widget.IHandler;
+import com.caojiantao.concurrent.spring.widget.ITaskHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.ResolvableType;
@@ -44,11 +44,11 @@ public class TaskNodeManager {
         MultiValueMap<Class, TaskNode> nextMap = new LinkedMultiValueMap<>();
         List<TaskNode> rootNodeList = new ArrayList<>();
         handlerMap.values().stream()
-                .filter(item -> item instanceof IHandler)
+                .filter(item -> item instanceof ITaskHandler)
                 .forEach(handler -> {
                     ExecutorTask annotation = handler.getClass().getAnnotation(ExecutorTask.class);
                     int taskId = getNextTaskId();
-                    TaskNode node = new TaskNode(taskId, annotation.name(), (IHandler) handler);
+                    TaskNode node = new TaskNode(taskId, annotation.name(), (ITaskHandler) handler);
                     Class[] depends = annotation.depends();
                     if (depends.length == 0) {
                         // 根节点
@@ -87,7 +87,7 @@ public class TaskNodeManager {
         ResolvableType[] interfaces = ResolvableType.forInstance(node.getHandler()).getInterfaces();
         ResolvableType handleType = null;
         for (ResolvableType resolvableType : interfaces) {
-            if (Objects.equals(resolvableType.toClass(), IHandler.class)) {
+            if (Objects.equals(resolvableType.toClass(), ITaskHandler.class)) {
                 handleType = resolvableType;
                 break;
             }
