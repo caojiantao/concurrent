@@ -1,98 +1,106 @@
 package com.caojiantao.concurrent.spring;
 
 import com.caojiantao.concurrent.core.executor.ExecutorModule;
+import com.caojiantao.concurrent.spring.constant.EModuleState;
+import com.caojiantao.concurrent.spring.constant.ETaskState;
 import com.caojiantao.concurrent.spring.entity.TaskNode;
+import com.caojiantao.concurrent.spring.widget.IExecutorController;
+import com.caojiantao.concurrent.spring.widget.impl.ExecutorController;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class SpringStarter<P, Q extends IHandler<P>> {
+public class SpringStarter<T> {
 
-    private ExecutorModule executorModule;
-    private Class<Q> handlerType;
-    private P moduleContext;
+    private ExecutorModule module;
+    private T context;
 
     private final AtomicInteger undoTasks = new AtomicInteger();
-    private final Map<Integer, AtomicInteger> preTaskMap = new HashMap<>();
+    private final Map<Integer, AtomicInteger> addrMap = new HashMap<>();
     private final Thread mainThread = Thread.currentThread();
-    private volatile EModuleStatus moduleStatus = EModuleStatus.RUNNING;
+    private IExecutorController controller;
 
-    public static <P, Q extends IHandler<P>> SpringStarter<P, Q> build(Class<Q> handlerType, P moduleContext) {
-        SpringStarter<P, Q> starter = new SpringStarter<>();
-        starter.handlerType = handlerType;
-        starter.moduleContext = moduleContext;
+    public static <T> SpringStarter<T> build(T context) {
+        SpringStarter<T> starter = new SpringStarter<>();
+        starter.context = context;
+        starter.controller = new ExecutorController();
         return starter;
     }
 
-    public SpringStarter<P, Q> executorModule(ExecutorModule executorModule) {
-        this.executorModule = executorModule;
+    public SpringStarter<T> module(ExecutorModule module) {
+        this.module = module;
         return this;
     }
 
-    public void setModuleStatus(EModuleStatus moduleStatus) {
-        this.moduleStatus = moduleStatus;
-    }
-
-    public EModuleStatus sync(long timeout) {
-        List<TaskNode> taskNodeList = TaskNodeManager.getTaskNodeList(handlerType);
+    public EModuleState sync(long timeout) {
+        // 获取 context 关联的任务节点集合
+        List<TaskNode> taskNodeList = TaskNodeManager.getTaskNodeList(context.getClass());
+        // 设置本次需要完成的任务节点数
         undoTasks.set(taskNodeList.size());
-        List<TaskNode> headList = taskNodeList.stream().filter(item -> item.getPreTask() == 0).collect(Collectors.toList());
-        Assert.notEmpty(headList, handlerType.getSimpleName() + " 没有找到任务起始结点");
-        taskNodeList.forEach(item -> preTaskMap.put(item.getTaskId(), new AtomicInteger(item.getPreTask())));
-        log.info("[{}]并发模块 任务总数({})，起始任务({}) ", executorModule.getModuleName(), undoTasks.get(), headList.size());
+        // 获取根任务节点集合，准备开始并发
+        List<TaskNode> headList = taskNodeList.stream().filter(item -> item.getAddr() == 0).collect(Collectors.toList());
+        // 保存每个任务节点的前置节点数
+        taskNodeList.forEach(item -> addrMap.put(item.getTaskId(), new AtomicInteger(item.getAddr())));
+        log.info("【{}】并发模块提交，任务节点总数({})，根任务节点数({})", module.getModuleName(), undoTasks.get(), headList.size());
         headList.forEach(this::submitTask);
+        // 基于 LockSupport 实现多线程同步
         LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(timeout));
-        return moduleStatus;
+        log.info("【{}】并发模块完成，任务节点总数({})，根任务节点数({})", module.getModuleName(), undoTasks.get(), headList.size());
+        return controller.getState();
     }
 
     private void submitTask(TaskNode taskNode) {
-        int preTask = preTaskMap.get(taskNode.getTaskId()).get();
-        log.info("[{}]开始提交 全局待完成({}) 前置待完成({})", taskNode.getTaskName(), undoTasks.get(), preTask);
-        if (preTask == 0) {
-            executorModule.getExecutor().submit(() -> {
-                try {
-                    log.info("[{}]开始执行 待完成任务数量({})", taskNode.getTaskName(), undoTasks.get());
-                    taskNode.getHandler().doHandler(this, moduleContext);
-                } catch (Exception e) {
-                    log.error("[{}]出现异常", taskNode.getTaskName(), e);
-                    taskNode.getHandler().onError(this, e);
-                } finally {
-                    finishTask(taskNode);
-                }
-            });
+        int adder = addrMap.get(taskNode.getTaskId()).get();
+        log.info("【{}】任务开始提交，全局待完成 {}，前置待完成 {}", taskNode.getTaskName(), undoTasks.get(), adder);
+        if (adder > 0) {
+            // 还有未完成的前置任务，继续等待
+            return;
         }
+        module.getExecutor().submit(() -> {
+            try {
+                log.info("【{}】任务开始执行，待完成任务数量 {}", taskNode.getTaskName(), undoTasks.get());
+                if (Objects.equals(ETaskState.FALLBACK, taskNode.getTaskState())) {
+                    taskNode.getHandler().fallback(controller, context);
+                } else {
+                    taskNode.getHandler().doHandler(controller, context);
+                }
+            } catch (Exception e) {
+                log.error("【{}】任务出现异常", taskNode.getTaskName(), e);
+                taskNode.getHandler().onError(controller, e);
+            } finally {
+                finishTask(taskNode);
+            }
+        });
     }
 
     private void finishTask(TaskNode taskNode) {
-        if (moduleStatus != EModuleStatus.RUNNING) {
-            log.info("[{}]执行中断({})，开始唤醒主线程...", executorModule.getModuleName(), moduleStatus);
+        EModuleState moduleState = controller.getState();
+        if (moduleState != EModuleState.RUNNING) {
+            log.info("【{}】执行中断 {}，开始唤醒主线程...", module.getModuleName(), moduleState);
             LockSupport.unpark(mainThread);
             return;
         }
 
         int undo = undoTasks.decrementAndGet();
-        List<TaskNode> nextNodeList = taskNode.getNextNodeList();
-        log.info("[{}]执行完毕，开始驱动后续任务执行，后续任务数量({})...", taskNode.getTaskName(), nextNodeList.size());
+        List<TaskNode> nextList = taskNode.getNextList();
+        log.info("【{}】任务执行完毕，开始驱动后续任务执行，后续任务数量 {}...", taskNode.getTaskName(), nextList.size());
         if (undo == 0) {
             log.info("所有任务执行完毕，开始唤醒主线程...");
-            setModuleStatus(EModuleStatus.COMPLETE);
+            controller.complete();
             LockSupport.unpark(mainThread);
             return;
         }
-        if (!CollectionUtils.isEmpty(nextNodeList)) {
-            nextNodeList.forEach(item -> {
-                preTaskMap.get(item.getTaskId()).decrementAndGet();
-                this.submitTask(item);
-            });
+        for (TaskNode child : nextList) {
+            addrMap.get(child.getTaskId()).decrementAndGet();
+            this.submitTask(child);
         }
     }
 }
