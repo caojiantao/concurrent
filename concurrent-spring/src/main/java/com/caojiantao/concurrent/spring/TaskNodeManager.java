@@ -2,11 +2,10 @@ package com.caojiantao.concurrent.spring;
 
 import com.caojiantao.concurrent.spring.annotation.ExecutorTask;
 import com.caojiantao.concurrent.spring.entity.TaskNode;
-import com.caojiantao.concurrent.spring.widget.ITaskHandler;
+import com.caojiantao.concurrent.spring.widget.IModuleTask;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.ResolvableType;
-import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
@@ -41,35 +40,31 @@ public class TaskNodeManager {
      */
     public static void initTaskNodeList(ApplicationContext context) {
         Map<String, Object> handlerMap = context.getBeansWithAnnotation(ExecutorTask.class);
+        log.info("[concurrent-spring] 初始化全局任务节点({})", handlerMap.size());
         MultiValueMap<Class, TaskNode> nextMap = new LinkedMultiValueMap<>();
         List<TaskNode> rootNodeList = new ArrayList<>();
-        handlerMap.values().stream()
-                .filter(item -> item instanceof ITaskHandler)
-                .forEach(handler -> {
-                    ExecutorTask annotation = handler.getClass().getAnnotation(ExecutorTask.class);
-                    int taskId = getNextTaskId();
-                    TaskNode node = new TaskNode(taskId, annotation.name(), (ITaskHandler) handler);
-                    Class[] depends = annotation.depends();
-                    if (depends.length == 0) {
-                        // 根节点
-                        rootNodeList.add(node);
-                    } else {
-                        // 子节点列表
-                        for (Class depend : depends) {
-                            nextMap.add(depend, node);
-                        }
-                    }
-                });
-        log.info("全局任务节点数量({}) 有效任务节点数量({})", handlerMap.size(), taskIdCounter.get());
+        for (Object handler : handlerMap.values()) {
+            ExecutorTask annotation = handler.getClass().getAnnotation(ExecutorTask.class);
+            int taskId = getNextTaskId();
+            TaskNode node = new TaskNode(taskId, annotation.name(), (IModuleTask) handler);
+            Class[] depends = annotation.depends();
+            if (depends.length == 0) {
+                // 根节点
+                rootNodeList.add(node);
+            } else {
+                // 子节点列表
+                for (Class depend : depends) {
+                    nextMap.add(depend, node);
+                }
+            }
+        }
         rootNodeList.forEach(node -> initNext(node, nextMap));
     }
 
     private static void initNext(TaskNode node, MultiValueMap<Class, TaskNode> nextMap) {
         if (hasInitNext(node)) {
-            // 如果已经初始化过则跳过
             return;
         }
-        log.info("新增任务节点【{}】", node.getTaskName());
         // 获取该节点的 context 类型
         Class<?> contextClass = getContextClass(node);
         moduleContextMap.add(contextClass, node);
@@ -83,28 +78,27 @@ public class TaskNodeManager {
         node.setNextList(nextList);
     }
 
+    /**
+     * 获取 Handler 实现类 Context 类型
+     */
     private static Class<?> getContextClass(TaskNode node) {
         ResolvableType[] interfaces = ResolvableType.forInstance(node.getHandler()).getInterfaces();
         ResolvableType handleType = null;
         for (ResolvableType resolvableType : interfaces) {
-            if (Objects.equals(resolvableType.toClass(), ITaskHandler.class)) {
+            if (Objects.equals(resolvableType.toClass(), IModuleTask.class)) {
                 handleType = resolvableType;
                 break;
             }
         }
-        Assert.notNull(handleType, "没有实现 IHandler 接口");
         return handleType.getGeneric(0).toClass();
     }
 
     private static boolean hasInitNext(TaskNode node) {
-        for (List<TaskNode> list : moduleContextMap.values()) {
-            for (TaskNode item : list) {
-                if (item.getTaskId().equals(node.getTaskId())) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return moduleContextMap.values()
+                .stream()
+                .flatMap(List::stream)
+                .anyMatch(item -> item.getTaskId().equals(node.getTaskId()));
+
     }
 
     private static Integer getNextTaskId() {

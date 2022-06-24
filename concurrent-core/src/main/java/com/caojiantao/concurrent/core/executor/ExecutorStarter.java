@@ -10,14 +10,17 @@ import java.util.concurrent.TimeUnit;
 
 public class ExecutorStarter {
 
-    private ExecutorModule executorModule;
+    private ExecutorModule executorModule = ExecutorModule.defaultModule();
     private LinkedList<Task> taskList = new LinkedList<>();
     private CountDownLatch latch;
 
-    public static ExecutorStarter build(ExecutorModule executorModule) {
-        ExecutorStarter starter = new ExecutorStarter();
-        starter.executorModule = executorModule;
-        return starter;
+    public static ExecutorStarter build() {
+        return new ExecutorStarter();
+    }
+
+    public ExecutorStarter build(ExecutorModule executorModule) {
+        this.executorModule = executorModule;
+        return this;
     }
 
     public ExecutorStarter addTask(String name, Runnable runnable) {

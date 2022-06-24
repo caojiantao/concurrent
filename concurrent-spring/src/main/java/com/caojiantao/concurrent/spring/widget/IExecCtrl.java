@@ -5,13 +5,9 @@ import com.caojiantao.concurrent.spring.constant.EModuleState;
 /**
  * @author caojiantao
  */
-public interface IExecutorController {
+public interface IExecCtrl {
 
     EModuleState getState();
 
-    void stopPropagate();
-
-    void interruptModule();
-
-    void complete();
+    void interrupt();
 }
