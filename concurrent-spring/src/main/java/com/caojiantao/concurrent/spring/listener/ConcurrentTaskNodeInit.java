@@ -40,7 +40,7 @@ public class ConcurrentTaskNodeInit implements ApplicationListener<ContextRefres
     public void init() {
         Map<String, IConcurrentTask> taskMap = applicationContext.getBeansOfType(IConcurrentTask.class);
         log.info("开始初始化全局任务节点");
-        MultiValueMap<Class<?>, ConcurrentTaskNode<?>> nextMap = new LinkedMultiValueMap<>();
+        MultiValueMap<Class, ConcurrentTaskNode> nextMap = new LinkedMultiValueMap<>();
         List<ConcurrentTaskNode<?>> rootNodeList = new ArrayList<>();
         Map<Class<?>, ConcurrentTaskNode<?>> taskNodeMap = ConcurrentManager.getNodeMap();
         for (IConcurrentTask task : taskMap.values()) {
@@ -75,11 +75,11 @@ public class ConcurrentTaskNodeInit implements ApplicationListener<ContextRefres
         log.info("初始化全局任务节点完成，{} 个并发模块，共 {} 个并发任务", moduleMap.size(), taskNodeMap.size());
     }
 
-    private void initTaskNode(ConcurrentTaskNode node, MultiValueMap<Class<?>, ConcurrentTaskNode<?>> nextMap) {
+    private void initTaskNode(ConcurrentTaskNode node, MultiValueMap<Class, ConcurrentTaskNode> nextMap) {
         if (!Objects.equals(node.getState(), ENodeState.INITIAL)) {
             return;
         }
-        List<ConcurrentTaskNode<?>> nextList = nextMap.getOrDefault(node.getTask().getClass(), new ArrayList<>());
+        List<ConcurrentTaskNode> nextList = nextMap.getOrDefault(node.getTask().getClass(), new ArrayList<>());
         for (ConcurrentTaskNode<?> child : nextList) {
             child.setDepends(child.getDepends() + 1);
             // 递归初始化子节点
@@ -87,13 +87,14 @@ public class ConcurrentTaskNodeInit implements ApplicationListener<ContextRefres
         }
         node.setState(ENodeState.NORMAL);
         node.setNextList(nextList);
+        // 节点初始化完，需要尝试初始化所在模块
         ConcurrentModule module = initTaskModule(node);
 
         String nexts = nextList.stream().map(ConcurrentTaskNode::getName).collect(Collectors.joining(","));
         log.info("初始化任务节点成功，模块“{}”，任务节点为“{}”，后置节点为”{}“", module.getName(), node.getName(), nexts);
     }
 
-    private ConcurrentModule initTaskModule(ConcurrentTaskNode<?> node) {
+    private ConcurrentModule initTaskModule(ConcurrentTaskNode node) {
         Map<Class<?>, ConcurrentModule<?>> taskModuleMap = ConcurrentManager.getModuleMap();
         Class<?> contextClass = GenericUtils.getInterfaceGeneric(node.getTask(), IConcurrentTask.class);
         Assert.notNull(contextClass, "解析并发模块上下文 Class 失败");

@@ -4,9 +4,9 @@ import com.caojiantao.concurrent.spring.constant.EModuleInfoState;
 import lombok.Data;
 
 @Data
-public class ConcurrentExecutor implements IConcurrentExecutor {
+public class ConcurrentExecutor<T> implements IConcurrentExecutor<T> {
 
-    private ConcurrentModuleInfo concurrentModuleInfo;
+    private ConcurrentModuleInfo<T> concurrentModuleInfo;
 
     @Override
     public void interruptModule() {

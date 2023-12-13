@@ -29,32 +29,42 @@ public class ConcurrentStarter<T> {
     /**
      * 模块执行信息
      */
-    private ConcurrentModuleInfo moduleInfo;
+    private ConcurrentModuleInfo<T> moduleInfo;
 
     /**
      * 并发模块操控者
      */
     private IConcurrentExecutor<T> executor;
 
-    public static <T> ConcurrentModuleInfo run(T context) {
+    /**
+     * 并发入口！！并发入口！！并发入口！！
+     */
+    public static <T> ConcurrentModuleInfo<T> run(T context) {
         ConcurrentStarter<T> starter = buildStarter(context);
         ConcurrentModule<T> module = starter.module;
-        log.info("模块“{}” 开始执行", module.getName());
+        log.info("[{}] 开始并发", module.getName());
         starter.run0();
-        ConcurrentModuleInfo moduleInfo = starter.moduleInfo;
-        log.info("模块“{}” 执行结束，耗时 {}", module.getName(), moduleInfo.getCost());
+        ConcurrentModuleInfo<T> moduleInfo = starter.moduleInfo;
+        log.info("[{}] 结束并发，耗时 {}", module.getName(), moduleInfo.getCost());
         return moduleInfo;
     }
 
+    /**
+     * 构建一个并发 starter，用来控制并发流程
+     *
+     * @param context 并发上下文
+     * @param <T>     上下文类型
+     * @return starter
+     */
     private static <T> ConcurrentStarter<T> buildStarter(T context) {
-        ConcurrentModule module = ConcurrentManager.getModule(context.getClass());
+        ConcurrentModule<T> module = ConcurrentManager.getModule(context.getClass());
         Assert.notNull(module, "找不到并发执行模块");
         ConcurrentStarter<T> starter = new ConcurrentStarter<>();
         starter.context = context;
         starter.module = module;
-        ConcurrentModuleInfo moduleInfo = ConcurrentModuleInfo.build(module);
+        ConcurrentModuleInfo<T> moduleInfo = ConcurrentModuleInfo.build(module);
         starter.moduleInfo = moduleInfo;
-        ConcurrentExecutor executor = new ConcurrentExecutor();
+        ConcurrentExecutor<T> executor = new ConcurrentExecutor<>();
         executor.setConcurrentModuleInfo(moduleInfo);
         starter.executor = executor;
         return starter;
@@ -74,15 +84,14 @@ public class ConcurrentStarter<T> {
     }
 
     private void submitTaskNode(ConcurrentTaskNode<T> taskNode) {
-        log.info("模块“{}” 提交任务“{}”", module.getName(), taskNode.getName());
-
+        log.info("[{}][{}] 提交任务", module.getName(), taskNode.getName());
         moduleInfo.recordTime(taskNode, ETaskEventType.SUBMIT);
-
         ThreadPoolExecutor threadPool = taskNode.getThreadPool();
         if (threadPool == null) {
             threadPool = module.getThreadPool();
         }
         threadPool.submit(() -> {
+            log.info("[{}][{}] 执行任务", module.getName(), taskNode.getName());
             beforeTask(taskNode);
             ENodeState nodeState = taskNode.getState();
             IConcurrentTask<T> nodeHandler = taskNode.getTask();
@@ -91,7 +100,7 @@ public class ConcurrentStarter<T> {
                     nodeHandler.run(context);
                 }
             } catch (Exception e) {
-                log.error("模块“{}” 任务“{}”出现异常", module.getName(), taskNode.getName(), e);
+                log.error("[{}][{}] 出现异常", module.getName(), taskNode.getName(), e);
                 nodeHandler.onError(context, e);
             } finally {
                 afterTask(taskNode);
@@ -100,7 +109,7 @@ public class ConcurrentStarter<T> {
     }
 
     private void beforeTask(ConcurrentTaskNode<T> taskNode) {
-        log.info("模块“{}” 开始执行“{}”", module.getName(), taskNode.getName());
+        log.info("[{}][{}] 开始执行", module.getName(), taskNode.getName());
         moduleInfo.recordTime(taskNode, ETaskEventType.START);
         ConcurrentManager.setExecutor(executor);
     }
@@ -108,7 +117,7 @@ public class ConcurrentStarter<T> {
     private void afterTask(ConcurrentTaskNode<T> taskNode) {
         moduleInfo.recordTime(taskNode, ETaskEventType.END);
         ConcurrentTaskNodeInfo nodeInfo = moduleInfo.getNodeInfo(taskNode);
-        log.info("模块“{}” 执行结束“{}”，等待时长 {}，执行耗时 {}", module.getName(), taskNode.getName(), nodeInfo.getWaitTime(), nodeInfo.getCost());
+        log.info("[{}][{}] 执行结束，等待时长 {}，执行耗时 {}", module.getName(), taskNode.getName(), nodeInfo.getWaitTime(), nodeInfo.getCost());
         ConcurrentManager.clearExecutor();
         moduleInfo.getCounter().decrementAndGet();
         EModuleInfoState moduleInfoState = moduleInfo.getState();

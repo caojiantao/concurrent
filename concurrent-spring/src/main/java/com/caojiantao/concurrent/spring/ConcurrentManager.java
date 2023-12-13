@@ -11,13 +11,16 @@ import java.util.Map;
 @Slf4j
 public class ConcurrentManager {
 
+    /**
+     * 全局的并发模块
+     */
     private static final Map<Class<?>, ConcurrentModule<?>> moduleMap = new HashMap<>();
 
     private static final Map<Class<?>, ConcurrentTaskNode<?>> nodeMap = new HashMap<>();
 
     private static final ThreadLocal<IConcurrentExecutor> executorLocal = new ThreadLocal<>();
 
-    public static ConcurrentModule getModule(Class<?> clazz) {
+    public static <T> ConcurrentModule getModule(Class<T> clazz) {
         return moduleMap.get(clazz);
     }
 

@@ -11,33 +11,55 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
+/**
+ * 并发模块运行时信息
+ *
+ * @param <T> 模块上下文
+ */
 @Data
-public class ConcurrentModuleInfo {
+public class ConcurrentModuleInfo<T> {
 
-    private final Thread mainThread = Thread.currentThread();
+    /**
+     * 主线程
+     */
+    private Thread mainThread;
 
     /**
      * 主线程唤醒额外标记，避免重复 unpark 导致未知异常
      */
-    private final AtomicBoolean unparked = new AtomicBoolean(false);
+    private AtomicBoolean unparked = new AtomicBoolean(false);
 
+    /**
+     * 当前运行机器 IP
+     */
     private String ip;
 
+    /**
+     * 并发模块执行开始时间
+     */
     private LocalDateTime start;
 
+    /**
+     * 并发模块执行结束时间
+     */
     private LocalDateTime end;
 
+    /**
+     * 当前运行时并发模块计数器，归 0 说明执行完了
+     */
     private AtomicInteger counter = new AtomicInteger();
 
     private Map<Class<?>, ConcurrentTaskNodeInfo> taskNodeInfoMap = new ConcurrentHashMap<>();
 
     private volatile EModuleInfoState state = EModuleInfoState.RUNNING;
 
+    /**
+     * 该模块是否已结束
+     */
     public boolean isCompleted() {
         return counter.get() == 0;
     }
@@ -52,17 +74,24 @@ public class ConcurrentModuleInfo {
         }
     }
 
+    /**
+     * 获取模块执行耗时(ms)
+     */
     public Long getCost() {
         return Duration.between(start, end).toMillis();
     }
 
-    public static ConcurrentModuleInfo build(ConcurrentModule module) {
-        ConcurrentModuleInfo moduleInfo = new ConcurrentModuleInfo();
+    /**
+     * 根据指定的并发模块，构造一个运行时模块
+     */
+    public static <T> ConcurrentModuleInfo<T> build(ConcurrentModule<T> module) {
+        ConcurrentModuleInfo<T> moduleInfo = new ConcurrentModuleInfo<>();
         LocalDateTime start = LocalDateTime.now();
-        moduleInfo.setStart(start);
         String ip = IpUtils.getHostIp();
-        moduleInfo.setIp(ip);
         AtomicInteger counter = new AtomicInteger(module.getNodeSize());
+        moduleInfo.setMainThread(Thread.currentThread());
+        moduleInfo.setStart(start);
+        moduleInfo.setIp(ip);
         moduleInfo.setCounter(counter);
         // 初始化各任务节点执行信息
         moduleInfo.initTaskNodeInfoList(module.getRootNodeList());
@@ -89,11 +118,11 @@ public class ConcurrentModuleInfo {
         }
     }
 
-    private void initTaskNodeInfoList(List<ConcurrentTaskNode> nodeList) {
+    private void initTaskNodeInfoList(List<ConcurrentTaskNode<T>> nodeList) {
         if (CollectionUtils.isEmpty(nodeList)) {
             return;
         }
-        for (ConcurrentTaskNode node : nodeList) {
+        for (ConcurrentTaskNode<T> node : nodeList) {
             if (taskNodeInfoMap.containsKey(node.getTask().getClass())) {
                 continue;
             }
