@@ -1,9 +1,9 @@
-package com.caojiantao.concurrent.spring;
+package com.github.caojiantao.concurrent.spring;
 
-import com.caojiantao.concurrent.spring.constant.EModuleInfoState;
-import com.caojiantao.concurrent.spring.constant.ENodeState;
-import com.caojiantao.concurrent.spring.constant.ETaskEventType;
-import com.caojiantao.concurrent.spring.entity.*;
+import com.github.caojiantao.concurrent.spring.constant.EModuleInfoState;
+import com.github.caojiantao.concurrent.spring.constant.ENodeState;
+import com.github.caojiantao.concurrent.spring.constant.ETaskEventType;
+import com.github.caojiantao.concurrent.spring.entity.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.Assert;
 

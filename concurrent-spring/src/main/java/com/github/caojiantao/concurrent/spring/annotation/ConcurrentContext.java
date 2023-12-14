@@ -1,4 +1,4 @@
-package com.caojiantao.concurrent.spring.annotation;
+package com.github.caojiantao.concurrent.spring.annotation;
 
 import java.lang.annotation.*;
 

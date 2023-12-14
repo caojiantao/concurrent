@@ -1,6 +1,6 @@
-package com.caojiantao.concurrent.spring.entity;
+package com.github.caojiantao.concurrent.spring.entity;
 
-import com.caojiantao.concurrent.spring.constant.EModuleInfoState;
+import com.github.caojiantao.concurrent.spring.constant.EModuleInfoState;
 import lombok.Data;
 
 @Data

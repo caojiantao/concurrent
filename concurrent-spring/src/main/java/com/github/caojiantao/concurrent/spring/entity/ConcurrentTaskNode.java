@@ -1,7 +1,7 @@
-package com.caojiantao.concurrent.spring.entity;
+package com.github.caojiantao.concurrent.spring.entity;
 
-import com.caojiantao.concurrent.spring.IConcurrentTask;
-import com.caojiantao.concurrent.spring.constant.ENodeState;
+import com.github.caojiantao.concurrent.spring.IConcurrentTask;
+import com.github.caojiantao.concurrent.spring.constant.ENodeState;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

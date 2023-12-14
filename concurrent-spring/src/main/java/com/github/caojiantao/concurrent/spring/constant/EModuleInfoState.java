@@ -1,4 +1,4 @@
-package com.caojiantao.concurrent.spring.constant;
+package com.github.caojiantao.concurrent.spring.constant;
 
 public enum EModuleInfoState {
 

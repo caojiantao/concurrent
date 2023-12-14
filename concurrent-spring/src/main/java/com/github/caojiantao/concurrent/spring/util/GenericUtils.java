@@ -1,4 +1,4 @@
-package com.caojiantao.concurrent.spring.util;
+package com.github.caojiantao.concurrent.spring.util;
 
 import org.springframework.core.ResolvableType;
 import org.springframework.util.ObjectUtils;

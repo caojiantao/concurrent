@@ -1,4 +1,4 @@
-package com.caojiantao.concurrent.spring;
+package com.github.caojiantao.concurrent.spring;
 
 /**
  * @param <T> 并行模块上下文

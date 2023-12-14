@@ -1,4 +1,4 @@
-package com.caojiantao.concurrent.spring.entity;
+package com.github.caojiantao.concurrent.spring.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -1,8 +1,8 @@
 package com.caojiantao.concurrent.example.spring;
 
 import com.caojiantao.concurrent.example.spring.service.TestContext;
-import com.caojiantao.concurrent.spring.ConcurrentStarter;
-import com.caojiantao.concurrent.spring.entity.ConcurrentModuleInfo;
+import com.github.caojiantao.concurrent.spring.ConcurrentStarter;
+import com.github.caojiantao.concurrent.spring.entity.ConcurrentModuleInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

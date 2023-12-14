@@ -1,13 +1,13 @@
-package com.caojiantao.concurrent.spring.listener;
+package com.github.caojiantao.concurrent.spring.listener;
 
-import com.caojiantao.concurrent.spring.ConcurrentManager;
-import com.caojiantao.concurrent.spring.IConcurrentTask;
-import com.caojiantao.concurrent.spring.annotation.ConcurrentContext;
-import com.caojiantao.concurrent.spring.annotation.ConcurrentTask;
-import com.caojiantao.concurrent.spring.constant.ENodeState;
-import com.caojiantao.concurrent.spring.entity.ConcurrentModule;
-import com.caojiantao.concurrent.spring.entity.ConcurrentTaskNode;
-import com.caojiantao.concurrent.spring.util.GenericUtils;
+import com.github.caojiantao.concurrent.spring.ConcurrentManager;
+import com.github.caojiantao.concurrent.spring.IConcurrentTask;
+import com.github.caojiantao.concurrent.spring.annotation.ConcurrentContext;
+import com.github.caojiantao.concurrent.spring.annotation.ConcurrentTask;
+import com.github.caojiantao.concurrent.spring.constant.ENodeState;
+import com.github.caojiantao.concurrent.spring.entity.ConcurrentModule;
+import com.github.caojiantao.concurrent.spring.entity.ConcurrentTaskNode;
+import com.github.caojiantao.concurrent.spring.util.GenericUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;

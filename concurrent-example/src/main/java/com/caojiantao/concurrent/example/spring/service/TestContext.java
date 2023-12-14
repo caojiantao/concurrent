@@ -1,6 +1,6 @@
 package com.caojiantao.concurrent.example.spring.service;
 
-import com.caojiantao.concurrent.spring.annotation.ConcurrentContext;
+import com.github.caojiantao.concurrent.spring.annotation.ConcurrentContext;
 
 /**
  * @author caojiantao

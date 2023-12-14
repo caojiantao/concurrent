@@ -1,8 +1,8 @@
-package com.caojiantao.concurrent.spring;
+package com.github.caojiantao.concurrent.spring;
 
-import com.caojiantao.concurrent.spring.entity.ConcurrentModule;
-import com.caojiantao.concurrent.spring.entity.ConcurrentTaskNode;
-import com.caojiantao.concurrent.spring.entity.IConcurrentExecutor;
+import com.github.caojiantao.concurrent.spring.entity.ConcurrentModule;
+import com.github.caojiantao.concurrent.spring.entity.ConcurrentTaskNode;
+import com.github.caojiantao.concurrent.spring.entity.IConcurrentExecutor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
