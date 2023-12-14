@@ -11,12 +11,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.LockSupport;
 
 /**
- * 并发模块运行时信息
+ * 并发模块运行时信息，包含当前模块下的所有节点运行时信息
  *
  * @param <T> 模块上下文
  */
@@ -27,11 +25,6 @@ public class ConcurrentModuleInfo<T> {
      * 主线程
      */
     private Thread mainThread;
-
-    /**
-     * 主线程唤醒额外标记，避免重复 unpark 导致未知异常
-     */
-    private AtomicBoolean unparked = new AtomicBoolean(false);
 
     /**
      * 当前运行机器 IP
@@ -58,20 +51,17 @@ public class ConcurrentModuleInfo<T> {
     private volatile EModuleInfoState state = EModuleInfoState.RUNNING;
 
     /**
+     * 模块是否正在运行
+     */
+    public boolean isRunning() {
+        return state == EModuleInfoState.RUNNING;
+    }
+
+    /**
      * 该模块是否已结束
      */
     public boolean isCompleted() {
         return counter.get() == 0;
-    }
-
-    public void setUnparked() {
-        unparked.set(true);
-    }
-
-    public void unpark() {
-        if (!unparked.getAndSet(true)) {
-            LockSupport.unpark(mainThread);
-        }
     }
 
     /**
@@ -98,32 +88,42 @@ public class ConcurrentModuleInfo<T> {
         return moduleInfo;
     }
 
-    public ConcurrentTaskNodeInfo getNodeInfo(ConcurrentTaskNode node) {
+    /**
+     * 根据指定节点类型，获取该节点运行时信息
+     */
+    public ConcurrentTaskNodeInfo getNodeInfo(ConcurrentTaskNode<T> node) {
         return taskNodeInfoMap.get(node.getTask().getClass());
     }
 
-    public void recordTime(ConcurrentTaskNode node, ETaskEventType event) {
+    /**
+     * 记录任务节点运行时间
+     */
+    public void recordTaskNodeTime(ConcurrentTaskNode<T> node, ETaskEventType event) {
         LocalDateTime now = LocalDateTime.now();
         ConcurrentTaskNodeInfo nodeInfo = getNodeInfo(node);
         switch (event) {
             case SUBMIT:
                 nodeInfo.setSubmitTime(now);
-                return;
+                break;
             case START:
                 nodeInfo.setStartTime(now);
-                return;
+                break;
             case END:
                 nodeInfo.setEndTime(now);
-                return;
+                break;
         }
     }
 
+    /**
+     * 根据当前任务节点，递归初始化当前及后置节点运行时信息
+     */
     private void initTaskNodeInfoList(List<ConcurrentTaskNode<T>> nodeList) {
         if (CollectionUtils.isEmpty(nodeList)) {
             return;
         }
         for (ConcurrentTaskNode<T> node : nodeList) {
             if (taskNodeInfoMap.containsKey(node.getTask().getClass())) {
+                // 已经初始化过该节点
                 continue;
             }
             ConcurrentTaskNodeInfo nodeInfo = ConcurrentTaskNodeInfo.build(node);

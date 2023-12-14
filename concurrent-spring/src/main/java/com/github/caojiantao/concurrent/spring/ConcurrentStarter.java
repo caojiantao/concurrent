@@ -1,7 +1,6 @@
 package com.github.caojiantao.concurrent.spring;
 
 import com.github.caojiantao.concurrent.spring.constant.EModuleInfoState;
-import com.github.caojiantao.concurrent.spring.constant.ENodeState;
 import com.github.caojiantao.concurrent.spring.constant.ETaskEventType;
 import com.github.caojiantao.concurrent.spring.entity.*;
 import lombok.extern.slf4j.Slf4j;
@@ -73,10 +72,9 @@ public class ConcurrentStarter<T> {
     private void run0() {
         List<ConcurrentTaskNode<T>> rootNodeList = module.getRootNodeList();
         rootNodeList.forEach(this::submitTaskNode);
-        // 基于 LockSupport 实现多线程同步
-        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(module.getTimeout()));
-        moduleInfo.setUnparked();
+        park();
         if (moduleInfo.getState() == EModuleInfoState.RUNNING) {
+            // 超时
             moduleInfo.setState(EModuleInfoState.TIMEOUT);
         }
         LocalDateTime end = LocalDateTime.now();
@@ -85,7 +83,7 @@ public class ConcurrentStarter<T> {
 
     private void submitTaskNode(ConcurrentTaskNode<T> taskNode) {
         log.info("[{}][{}] 提交任务", module.getName(), taskNode.getName());
-        moduleInfo.recordTime(taskNode, ETaskEventType.SUBMIT);
+        moduleInfo.recordTaskNodeTime(taskNode, ETaskEventType.SUBMIT);
         ThreadPoolExecutor threadPool = taskNode.getThreadPool();
         if (threadPool == null) {
             threadPool = module.getThreadPool();
@@ -93,12 +91,9 @@ public class ConcurrentStarter<T> {
         threadPool.submit(() -> {
             log.info("[{}][{}] 执行任务", module.getName(), taskNode.getName());
             beforeTask(taskNode);
-            ENodeState nodeState = taskNode.getState();
             IConcurrentTask<T> nodeHandler = taskNode.getTask();
             try {
-                if (nodeState == ENodeState.NORMAL) {
-                    nodeHandler.run(context);
-                }
+                nodeHandler.run(context);
             } catch (Exception e) {
                 log.error("[{}][{}] 出现异常", module.getName(), taskNode.getName(), e);
                 nodeHandler.onError(context, e);
@@ -110,25 +105,21 @@ public class ConcurrentStarter<T> {
 
     private void beforeTask(ConcurrentTaskNode<T> taskNode) {
         log.info("[{}][{}] 开始执行", module.getName(), taskNode.getName());
-        moduleInfo.recordTime(taskNode, ETaskEventType.START);
+        moduleInfo.recordTaskNodeTime(taskNode, ETaskEventType.START);
         ConcurrentManager.setExecutor(executor);
     }
 
     private void afterTask(ConcurrentTaskNode<T> taskNode) {
-        moduleInfo.recordTime(taskNode, ETaskEventType.END);
+        moduleInfo.recordTaskNodeTime(taskNode, ETaskEventType.END);
         ConcurrentTaskNodeInfo nodeInfo = moduleInfo.getNodeInfo(taskNode);
         log.info("[{}][{}] 执行结束，等待时长 {}，执行耗时 {}", module.getName(), taskNode.getName(), nodeInfo.getWaitTime(), nodeInfo.getCost());
         ConcurrentManager.clearExecutor();
         moduleInfo.getCounter().decrementAndGet();
-        EModuleInfoState moduleInfoState = moduleInfo.getState();
-        if (moduleInfoState != EModuleInfoState.RUNNING) {
-            // 模块非运行状态，尝试唤醒主线程并直接返回
-            moduleInfo.unpark();
+        if (!moduleInfo.isRunning()) {
             return;
         }
         if (moduleInfo.isCompleted()) {
-            moduleInfo.setState(EModuleInfoState.SUCCESS);
-            moduleInfo.unpark();
+            unPark();
             return;
         }
         // 提交下游任务
@@ -142,9 +133,21 @@ public class ConcurrentStarter<T> {
             ConcurrentTaskNodeInfo taskNodeInfo = moduleInfo.getNodeInfo(child);
             int depends = taskNodeInfo.getDepends().decrementAndGet();
             if (depends == 0) {
-                // 当子任务没有依赖任务才进行提交
+                // 当子任务没有依赖任务或者依赖的任务都执行完毕才进行提交
                 this.submitTaskNode(child);
             }
+        }
+    }
+
+    private void park() {
+        // 基于 LockSupport 实现多线程同步
+        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(module.getTimeout()));
+    }
+
+    private void unPark() {
+        if (moduleInfo.isRunning()) {
+            moduleInfo.setState(EModuleInfoState.SUCCESS);
+            LockSupport.unpark(moduleInfo.getMainThread());
         }
     }
 }
