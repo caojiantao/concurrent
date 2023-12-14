@@ -34,7 +34,7 @@
         </dependency>
 
         <dependency>
-            <groupId>com.caojiantao.concurrent</groupId>
+            <groupId>com.github.caojiantao</groupId>
             <artifactId>concurrent-spring</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>

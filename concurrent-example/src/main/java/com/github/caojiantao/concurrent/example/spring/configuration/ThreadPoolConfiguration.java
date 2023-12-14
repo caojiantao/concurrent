@@ -1,4 +1,4 @@
-package com.caojiantao.concurrent.example.spring.configuration;
+package com.github.caojiantao.concurrent.example.spring.configuration;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

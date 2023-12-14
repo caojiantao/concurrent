@@ -1,4 +1,4 @@
-package com.caojiantao.concurrent.core.entity;
+package com.github.caojiantao.concurrent.core.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

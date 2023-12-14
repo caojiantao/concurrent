@@ -61,11 +61,14 @@ public class ConcurrentStarter<T> {
         ConcurrentStarter<T> starter = new ConcurrentStarter<>();
         starter.context = context;
         starter.module = module;
-        ConcurrentModuleInfo<T> moduleInfo = ConcurrentModuleInfo.build(module);
-        starter.moduleInfo = moduleInfo;
-        ConcurrentExecutor<T> executor = new ConcurrentExecutor<>();
-        executor.setConcurrentModuleInfo(moduleInfo);
-        starter.executor = executor;
+        starter.moduleInfo = ConcurrentModuleInfo.build(module);
+        // todo 暂时匿名内部类，没有想到更优雅的控制器
+        starter.executor = new IConcurrentExecutor<T>() {
+            @Override
+            public void interruptModule() {
+                starter.unPark(true);
+            }
+        };
         return starter;
     }
 
@@ -73,12 +76,12 @@ public class ConcurrentStarter<T> {
         List<ConcurrentTaskNode<T>> rootNodeList = module.getRootNodeList();
         rootNodeList.forEach(this::submitTaskNode);
         park();
-        if (moduleInfo.getState() == EModuleInfoState.RUNNING) {
+        LocalDateTime end = LocalDateTime.now();
+        moduleInfo.setEnd(end);
+        if (moduleInfo.getCost() > module.getTimeout()) {
             // 超时
             moduleInfo.setState(EModuleInfoState.TIMEOUT);
         }
-        LocalDateTime end = LocalDateTime.now();
-        moduleInfo.setEnd(end);
     }
 
     private void submitTaskNode(ConcurrentTaskNode<T> taskNode) {
@@ -116,10 +119,12 @@ public class ConcurrentStarter<T> {
         ConcurrentManager.clearExecutor();
         moduleInfo.getCounter().decrementAndGet();
         if (!moduleInfo.isRunning()) {
+            // 并发模块已终止（超时、中断）
             return;
         }
         if (moduleInfo.isCompleted()) {
-            unPark();
+            // 所有任务都执行完毕
+            unPark(false);
             return;
         }
         // 提交下游任务
@@ -144,10 +149,14 @@ public class ConcurrentStarter<T> {
         LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(module.getTimeout()));
     }
 
-    private void unPark() {
-        if (moduleInfo.isRunning()) {
-            moduleInfo.setState(EModuleInfoState.SUCCESS);
-            LockSupport.unpark(moduleInfo.getMainThread());
-        }
+    /**
+     * 唤醒主线程
+     *
+     * @param interrupt 是否终端
+     */
+    private void unPark(boolean interrupt) {
+        EModuleInfoState state = interrupt ? EModuleInfoState.INTERRUPT : EModuleInfoState.SUCCESS;
+        moduleInfo.setState(state);
+        LockSupport.unpark(moduleInfo.getMainThread());
     }
 }

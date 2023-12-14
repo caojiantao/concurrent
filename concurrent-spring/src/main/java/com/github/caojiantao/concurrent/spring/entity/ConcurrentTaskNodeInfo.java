@@ -1,6 +1,6 @@
 package com.github.caojiantao.concurrent.spring.entity;
 
-import com.caojiantao.concurrent.core.util.IpUtils;
+import com.github.caojiantao.concurrent.core.util.IpUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

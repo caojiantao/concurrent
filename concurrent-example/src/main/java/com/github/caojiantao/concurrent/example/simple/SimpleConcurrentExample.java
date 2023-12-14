@@ -1,6 +1,6 @@
-package com.caojiantao.concurrent.example.simple;
+package com.github.caojiantao.concurrent.example.simple;
 
-import com.caojiantao.concurrent.core.ConcurrentStarter;
+import com.github.caojiantao.concurrent.core.ConcurrentStarter;
 
 import java.util.concurrent.ThreadLocalRandom;
 

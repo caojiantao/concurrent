@@ -1,6 +1,6 @@
-package com.caojiantao.concurrent.example.spring.service.handler;
+package com.github.caojiantao.concurrent.example.spring.service.handler;
 
-import com.caojiantao.concurrent.example.spring.service.TestContext;
+import com.github.caojiantao.concurrent.example.spring.service.TestContext;
 import com.github.caojiantao.concurrent.spring.annotation.ConcurrentTask;
 import com.github.caojiantao.concurrent.spring.IConcurrentTask;
 import lombok.extern.slf4j.Slf4j;

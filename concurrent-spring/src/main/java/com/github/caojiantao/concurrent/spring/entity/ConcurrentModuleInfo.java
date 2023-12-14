@@ -1,6 +1,6 @@
 package com.github.caojiantao.concurrent.spring.entity;
 
-import com.caojiantao.concurrent.core.util.IpUtils;
+import com.github.caojiantao.concurrent.core.util.IpUtils;
 import com.github.caojiantao.concurrent.spring.constant.EModuleInfoState;
 import com.github.caojiantao.concurrent.spring.constant.ETaskEventType;
 import lombok.Data;

@@ -1,6 +1,6 @@
-package com.caojiantao.concurrent.example.spring.service.handler;
+package com.github.caojiantao.concurrent.example.spring.service.handler;
 
-import com.caojiantao.concurrent.example.spring.service.TestContext;
+import com.github.caojiantao.concurrent.example.spring.service.TestContext;
 import com.github.caojiantao.concurrent.spring.annotation.ConcurrentTask;
 import com.github.caojiantao.concurrent.spring.IConcurrentTask;
 import lombok.extern.slf4j.Slf4j;
@@ -11,12 +11,12 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
-@ConcurrentTask(taskName = "BBB", depends = {AAA.class})
-public class BBB implements IConcurrentTask<TestContext> {
+@ConcurrentTask(taskName = "GGG", depends = {FFF.class})
+public class GGG implements IConcurrentTask<TestContext> {
 
     @Override
     public void run(TestContext context) throws Exception {
-        log.info("======================================= BBB =======================================");
+        log.info("======================================= GGG =======================================");
         int delay = ThreadLocalRandom.current().nextInt(1000);
         TimeUnit.MILLISECONDS.sleep(delay);
     }

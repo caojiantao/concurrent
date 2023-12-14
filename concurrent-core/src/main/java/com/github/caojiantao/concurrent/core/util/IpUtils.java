@@ -1,4 +1,4 @@
-package com.caojiantao.concurrent.core.util;
+package com.github.caojiantao.concurrent.core.util;
 
 import lombok.SneakyThrows;
 

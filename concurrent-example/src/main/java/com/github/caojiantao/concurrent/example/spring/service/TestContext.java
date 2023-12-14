@@ -1,4 +1,4 @@
-package com.caojiantao.concurrent.example.spring.service;
+package com.github.caojiantao.concurrent.example.spring.service;
 
 import com.github.caojiantao.concurrent.spring.annotation.ConcurrentContext;
 

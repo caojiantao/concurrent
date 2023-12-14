@@ -18,7 +18,7 @@
     <dependencies>
 
         <dependency>
-            <groupId>com.caojiantao.concurrent</groupId>
+            <groupId>com.github.caojiantao</groupId>
             <artifactId>concurrent-core</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>

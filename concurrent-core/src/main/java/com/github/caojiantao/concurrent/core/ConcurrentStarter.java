@@ -1,8 +1,8 @@
-package com.caojiantao.concurrent.core;
+package com.github.caojiantao.concurrent.core;
 
-import com.caojiantao.concurrent.core.entity.ConcurrentModule;
-import com.caojiantao.concurrent.core.entity.ConcurrentTask;
-import com.caojiantao.concurrent.core.entity.UnCheckedRunnable;
+import com.github.caojiantao.concurrent.core.entity.ConcurrentModule;
+import com.github.caojiantao.concurrent.core.entity.ConcurrentTask;
+import com.github.caojiantao.concurrent.core.entity.UnCheckedRunnable;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
